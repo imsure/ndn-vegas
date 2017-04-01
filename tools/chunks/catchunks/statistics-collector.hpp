@@ -26,6 +26,7 @@
 #define NDN_TOOLS_CHUNKS_CATCHUNKS_AIMD_STATISTICS_COLLECTOR_HPP
 
 #include "pipeline-interests-cwa.hpp"
+#include "pipeline-interests-vegas.hpp"
 #include "rtt-estimator.hpp"
 #include "rate-estimator.hpp"
 
@@ -39,6 +40,10 @@ class StatisticsCollector : noncopyable
 {
 public:
   StatisticsCollector(PipelineInterestsCwa& pipeline,
+                      RttEstimator& rttEstimator, RateEstimator& rateEstimator,
+                      std::ostream& osCwnd, std::ostream& osRtt, std::ostream& osRate);
+
+  StatisticsCollector(PipelineInterestsVegas& pipeline,
                       RttEstimator& rttEstimator, RateEstimator& rateEstimator,
                       std::ostream& osCwnd, std::ostream& osRtt, std::ostream& osRate);
 

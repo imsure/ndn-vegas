@@ -38,6 +38,7 @@
 #include "pipeline-interests-aimd.hpp"
 #include "pipeline-interests-cubic.hpp"
 #include "pipeline-interests-tcpbic.hpp"
+#include "pipeline-interests-vegas.hpp"
 #include "statistics-collector.hpp"
 
 #include <ndn-cxx/security/validator-null.hpp>
@@ -61,14 +62,14 @@ main(int argc, char** argv)
   // congestion control parameters, CWA refers to conservative window adaptation,
   // i.e. only reduce window size at most once per RTT
   bool disableCwa(false), resetCwndToInit(false), outputSummary(false);
-  double rateInterval(1);
+  double rateInterval(1); // 1 second
   int initCwnd(1), initSsthresh(std::numeric_limits<int>::max()), k(4);
 
   double aiStepAimd(1.0), mdCoef(0.5); // parameters for AIMD pipeline
   double aiStepCubic(1.0), cubicScale(0.4), cubicBeta(0.2); // parameters for CUBIC pipeline
 
   // parameters for RTO calculation
-  double alpha(0.125), beta(0.25), minRto(200.0), maxRto(4000.0);
+  double alpha(0.125), beta(0.25), minRto(20.0), maxRto(4000.0);
 
   std::string statsPath, cwndPath, rttPath, ratePath;
 
@@ -79,7 +80,7 @@ main(int argc, char** argv)
     ("discover-version,d",  po::value<std::string>(&discoverType)->default_value(discoverType),
                             "version discovery algorithm to use; valid values are: 'fixed', 'iterative'")
     ("pipeline-type,t",  po::value<std::string>(&pipelineType)->default_value(pipelineType),
-                         "type of Interest pipeline to use; valid values are: 'fixed', 'aimd', 'tcpbic', 'cubic'")
+     "type of Interest pipeline to use; valid values are: 'fixed', 'aimd', 'tcpbic', 'cubic' or 'vegas'")
     ("fresh,f",     po::bool_switch(&options.mustBeFresh), "only return fresh content")
     ("lifetime,l",  po::value<uint64_t>()->default_value(options.interestLifetime.count()),
                     "lifetime of expressed Interests, in milliseconds")
@@ -342,6 +343,59 @@ main(int argc, char** argv)
         }
         break;
       }
+    }
+    else if (pipelineType == "vegas") {
+            /* set up RTT Estimator & Rate Estimator */
+      RttEstimator::Options optionsRttEst;
+      optionsRttEst.isVerbose = options.isVerbose;
+      optionsRttEst.alpha = alpha;
+      optionsRttEst.beta = beta;
+      optionsRttEst.k = k;
+      optionsRttEst.minRto = Milliseconds(minRto);
+      optionsRttEst.maxRto = Milliseconds(maxRto);
+
+      rttEstimator = make_unique<RttEstimator>(optionsRttEst);
+      rateEstimator = make_unique<RateEstimator>(rateInterval);
+
+      /* set up options for vegas pipeline */
+      PipelineInterestsVegas::Options optionsVegas(options);
+      optionsVegas.disableCwa = disableCwa;
+      optionsVegas.initCwnd = static_cast<double>(initCwnd);
+      optionsVegas.initSsthresh = static_cast<double>(initSsthresh);
+      optionsVegas.rateInterval = rateInterval;
+      optionsVegas.outputSummary = outputSummary;
+
+      if (!statsPath.empty()) { // set up output files for stats if specified
+        // construct stats file paths
+        cwndPath = statsPath + '/' + "cwnd_" + pipelineType + ".txt";
+        rttPath = statsPath + '/' + "rtt_" + pipelineType + ".txt";
+        ratePath = statsPath + '/' + "rate_" + pipelineType + ".txt";
+
+        // open stats files
+        statsFileCwnd.open(cwndPath);
+        if (statsFileCwnd.fail()) {
+          std::cerr << "ERROR: failed to open " << cwndPath << std::endl;
+          return 4;
+        }
+        statsFileRtt.open(rttPath);
+        if (statsFileRtt.fail()) {
+          std::cerr << "ERROR: failed to open " << rttPath << std::endl;
+          return 4;
+        }
+        statsFileRate.open(ratePath);
+        if (statsFileRate.fail()) {
+          std::cerr << "ERROR: failed to open " << ratePath << std::endl;
+          return 4;
+        }
+      }
+
+      auto vegasPipeline = make_unique<PipelineInterestsVegas>(face, *rttEstimator,
+                                                               *rateEstimator, optionsVegas);
+      if (!statsPath.empty()) {
+        statsCollector = make_unique<StatisticsCollector>(*vegasPipeline, *rttEstimator, *rateEstimator,
+                                                          statsFileCwnd, statsFileRtt, statsFileRate);
+      }
+      pipeline = std::move(vegasPipeline);
     }
     else {
       std::cerr << "ERROR: Interest pipeline type {" << pipelineType << "} not valid" << std::endl;

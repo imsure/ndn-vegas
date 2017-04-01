@@ -59,7 +59,7 @@ public:
       , beta(0.25)
       , k(4)
       , initialRto(1000.0)
-      , minRto(200.0)
+      , minRto(20.0)
       , maxRto(20000.0)
       , rtoBackoffMultiplier(2)
     {

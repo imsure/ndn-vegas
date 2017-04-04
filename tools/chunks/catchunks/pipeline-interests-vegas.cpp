@@ -393,7 +393,7 @@ PipelineInterestsVegas::vegasUpdate()
     if (diff_rate < m_options.vegasAlpha) {
       m_cwnd += 1; // linear increase
     } else if (diff_rate > m_options.vegasBeta) {
-      m_cwnd -= 1; // linear decrease
+      m_cwnd = std::max(2.0, m_cwnd - 1); // linear decrease
     } else {
       // keep cwnd unchanged
     }

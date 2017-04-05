@@ -566,11 +566,14 @@ PipelineInterestsVegas::printSummary() const
   }
 
   std::cerr << "\nAll segments have been received.\n"
-    << "Total # of segments received: " << m_nReceived << "\n"
-    << "Time used: " << timePassed.count() << " ms" << "\n"
-    << "Base RTT: " << m_baseRtt << "\n"
-    << "Total # of retransmitted segments: " << m_nRetransmitted << "\n"
-    << "Goodput: " << throughput << " " << throughputUnit << "\n";
+            << "Total # of segments received: " << m_nReceived << "\n"
+            << "Time used: " << timePassed.count() << " ms" << "\n"
+            << "Base RTT: " << m_baseRtt << "\n"
+            << "\tVegas alpha = " << m_options.vegasAlpha << "\n"
+            << "\tVegas beta = " << m_options.vegasBeta << "\n"
+            << "\tVegas gamma = " << m_options.vegasGamma << "\n"
+            << "Total # of retransmitted segments: " << m_nRetransmitted << "\n"
+            << "Goodput: " << throughput << " " << throughputUnit << "\n";
 }
 
 std::ostream&

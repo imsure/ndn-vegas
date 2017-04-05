@@ -65,8 +65,12 @@ main(int argc, char** argv)
   double rateInterval(1); // 1 second
   int initCwnd(1), initSsthresh(std::numeric_limits<int>::max()), k(4);
 
-  double aiStepAimd(1.0), mdCoef(0.5); // parameters for AIMD pipeline
-  double aiStepCubic(1.0), cubicScale(0.4), cubicBeta(0.2); // parameters for CUBIC pipeline
+  // parameters for AIMD pipeline
+  double aiStepAimd(1.0), mdCoef(0.5);
+  // parameters for CUBIC pipeline
+  double aiStepCubic(1.0), cubicScale(0.4), cubicBeta(0.2);
+  // parameters for AIMD pipeline
+  double vegasAlpha(10), vegasBeta(20), vegasGamma(std::numeric_limits<double>::max());
 
   // parameters for RTO calculation
   double alpha(0.125), beta(0.25), minRto(20.0), maxRto(4000.0);
@@ -154,10 +158,20 @@ main(int argc, char** argv)
      "additive-increase step")
     ;
 
+  po::options_description ccVegasPipeDesc("Vegas pipeline options");
+  ccVegasPipeDesc.add_options()
+    ("vegas-alpha",    po::value<double>(&vegasAlpha)->default_value(vegasAlpha),
+     "Vegas alpha parameter")
+    ("vegas-beta",     po::value<double>(&vegasBeta)->default_value(vegasBeta),
+     "Vegas beta parameter")
+    ("vegas-gamma",    po::value<double>(&vegasGamma)->default_value(vegasGamma),
+     "Vegas gamma parameter")
+    ;
+
   po::options_description visibleDesc;
   visibleDesc.add(basicDesc).add(iterDiscoveryDesc).
     add(fixedPipeDesc).add(ccPipeDesc).add(rtoDesc).
-    add(ccAimdPipeDesc).add(ccCubicPipeDesc);
+    add(ccAimdPipeDesc).add(ccCubicPipeDesc).add(ccVegasPipeDesc);
 
   po::options_description hiddenDesc;
   hiddenDesc.add_options()
@@ -359,6 +373,9 @@ main(int argc, char** argv)
 
       /* set up options for vegas pipeline */
       PipelineInterestsVegas::Options optionsVegas(options);
+      optionsVegas.vegasAlpha = vegasAlpha;
+      optionsVegas.vegasBeta = vegasBeta;
+      optionsVegas.vegasGamma = vegasGamma;
       optionsVegas.disableCwa = disableCwa;
       optionsVegas.initCwnd = static_cast<double>(initCwnd);
       optionsVegas.initSsthresh = static_cast<double>(initSsthresh);

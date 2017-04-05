@@ -51,8 +51,8 @@ public:
     , disableCwa(false)
     , resetCwndToInit(false)
     , outputSummary(false)
-    , vegasAlpha(5) // 10
-    , vegasBeta(10) // 20
+    , vegasAlpha(20) // 10
+    , vegasBeta(30) // 20
     , vegasGamma(std::numeric_limits<double>::max())
     , minVegasEpochDuration(10)
   {

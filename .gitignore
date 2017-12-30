@@ -17,3 +17,6 @@ build/
 
 # Other
 VERSION
+
+# data
+*.txt
